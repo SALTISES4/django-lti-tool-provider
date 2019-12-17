@@ -5,16 +5,21 @@ from django.db import models, migrations
 from django.db.models import Max
 from django.db.models.functions import Length
 
+
 def check_field_max_length_lteq_190(apps, schema_editor):
     """
     Check to see if we've got any data in the table that prevents us from
     migrating the length of the column down to 190; if so, raise an exception.
     """
-    LtiUserData = apps.get_model('django_lti_tool_provider', 'LtiUserData')
-    max_custom_key_length = LtiUserData.objects.aggregate(length=Max(Length('custom_key')))['length']
+    LtiUserData = apps.get_model("django_lti_tool_provider", "LtiUserData")
+    max_custom_key_length = LtiUserData.objects.aggregate(
+        length=Max(Length("custom_key"))
+    )["length"]
     if max_custom_key_length > 190:
-        raise ValueError('Cannot perform migration: values of \'custom_key\' with length '
-                         '{} exceed the expected length 190.'.format(max_custom_key_length))
+        raise ValueError(
+            "Cannot perform migration: values of 'custom_key' with length "
+            "{} exceed the expected length 190.".format(max_custom_key_length)
+        )
 
 
 class Migration(migrations.Migration):
@@ -28,13 +33,11 @@ class Migration(migrations.Migration):
     """
 
     dependencies = [
-        ('django_lti_tool_provider', '0001_initial'),
+        ("django_lti_tool_provider", "0001_initial"),
     ]
 
     operations = [
-        migrations.RunPython(
-            code=check_field_max_length_lteq_190
-        ),
+        migrations.RunPython(code=check_field_max_length_lteq_190),
         migrations.RunSQL(
             sql=migrations.RunSQL.noop,
             state_operations=[
@@ -44,15 +47,15 @@ class Migration(migrations.Migration):
                 # Django "hey, I'm in this different state" without actually modifying
                 # the database. This is not a reversible operation.
                 migrations.AlterField(
-                    model_name='ltiuserdata',
-                    name='custom_key',
-                    field=models.CharField(default=b'', max_length=400)
+                    model_name="ltiuserdata",
+                    name="custom_key",
+                    field=models.CharField(default=b"", max_length=400),
                 )
             ],
         ),
         migrations.AlterField(
-            model_name='ltiuserdata',
-            name='custom_key',
-            field=models.CharField(default=b'', max_length=190),
+            model_name="ltiuserdata",
+            name="custom_key",
+            field=models.CharField(default=b"", max_length=190),
         ),
     ]

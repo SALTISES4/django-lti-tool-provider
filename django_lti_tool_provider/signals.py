@@ -18,9 +18,9 @@ class Signals(object):
 
 @receiver(Signals.Grade.updated, dispatch_uid="django_lti_grade_updated")
 def grade_updated_handler(sender, **kwargs):  # pylint: disable=unused-argument
-    user = kwargs.get('user', None)
-    grade = kwargs.get('grade', None)
-    custom_key = kwargs.get('custom_key', None)
+    user = kwargs.get("user", None)
+    grade = kwargs.get("grade", None)
+    custom_key = kwargs.get("custom_key", None)
     _send_grade(user, grade, custom_key)
 
 
@@ -33,12 +33,12 @@ def _send_grade(user, grade, custom_key):
     except LtiUserData.DoesNotExist:
         _logger.info(
             u"No LTI parameters for user %(user)s and key %(key)s stored - probably never sent an LTI request",
-            dict(user=user.username, key=custom_key)
+            dict(user=user.username, key=custom_key),
         )
         raise
     except Exception:
         _logger.exception(
             u"Exception occurred in lti module when sending grade for user %(user)s and key %(key)s.",
-            dict(user=user, key=custom_key)
+            dict(user=user, key=custom_key),
         )
         raise

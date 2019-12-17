@@ -16,12 +16,9 @@ class WrongUserError(Exception):
 
 
 class LtiUserData(models.Model):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE,)
     edx_lti_parameters = JSONField(default={})
-    custom_key = models.CharField(max_length=190, null=False, default='')
+    custom_key = models.CharField(max_length=190, null=False, default="")
 
     class Meta:
         app_label = "django_lti_tool_provider"
@@ -37,37 +34,51 @@ class LtiUserData(models.Model):
             raise ValueError(message)
 
         if not 0 <= grade <= 1:
-            _log_and_throw("Grade should be in range [0..1], got {grade}".format(grade=grade))
+            _log_and_throw(
+                "Grade should be in range [0..1], got {grade}".format(grade=grade)
+            )
 
         if not self.edx_lti_parameters:
-            _log_and_throw("LTI grade parameters is not set".format(params=self._required_params))
+            _log_and_throw(
+                "LTI grade parameters is not set".format(params=self._required_params)
+            )
 
         empty_parameters = [
-            parameter for parameter in self._required_params
-            if not self.edx_lti_parameters.get(parameter, '')
+            parameter
+            for parameter in self._required_params
+            if not self.edx_lti_parameters.get(parameter, "")
         ]
 
         if empty_parameters:
             parameters_repr = ", ".join(empty_parameters)
             _log_and_throw(
-                "Following required LTI parameters are not set: {parameters}".format(parameters=parameters_repr)
+                "Following required LTI parameters are not set: {parameters}".format(
+                    parameters=parameters_repr
+                )
             )
 
     def send_lti_grade(self, grade):
         """ Instantiates DjangoToolProvider using stored lti parameters and sends grade """
         self._validate_lti_grade_request(grade)
-        provider = DjangoToolProvider(settings.LTI_CLIENT_KEY, settings.LTI_CLIENT_SECRET, self.edx_lti_parameters)
+        provider = DjangoToolProvider(
+            settings.LTI_CLIENT_KEY, settings.LTI_CLIENT_SECRET, self.edx_lti_parameters
+        )
         outcome = provider.post_replace_result(grade)
 
         _logger.info(
             u"LTI grade request was %(successful)s. Description is %(description)s",
-            dict(successful="successful" if outcome.is_success() else "unsuccessful", description=outcome.description)
+            dict(
+                successful="successful" if outcome.is_success() else "unsuccessful",
+                description=outcome.description,
+            ),
         )
 
         return outcome
 
     @classmethod
-    def get_or_create_by_parameters(cls, user, authentication_manager, lti_params, create=True):
+    def get_or_create_by_parameters(
+        cls, user, authentication_manager, lti_params, create=True
+    ):
         """
         Gets a user's LTI user data, creating the user if they do not exist. If create is False,
         it will raise LtiUserData.DoesNotExist should no data exist for the user.
@@ -79,18 +90,25 @@ class LtiUserData(models.Model):
 
         # implicitly tested by test_views
         if custom_key is None:
-            custom_key = ''
+            custom_key = ""
 
         if create:
-            lti_user_data, created = LtiUserData.objects.get_or_create(user=user, custom_key=custom_key)
+            lti_user_data, created = LtiUserData.objects.get_or_create(
+                user=user, custom_key=custom_key
+            )
         else:
             # Could omit it, but it would change the signature.
             created = False
             lti_user_data = LtiUserData.objects.get(user=user, custom_key=custom_key)
 
-        if lti_user_data.edx_lti_parameters.get('user_id', lti_params['user_id']) != lti_params['user_id']:
+        if (
+            lti_user_data.edx_lti_parameters.get("user_id", lti_params["user_id"])
+            != lti_params["user_id"]
+        ):
             # TODO: not covered by test
-            message = u"LTI parameters for user found, but anonymous user id does not match."
+            message = (
+                u"LTI parameters for user found, but anonymous user id does not match."
+            )
             _logger.error(message)
             raise WrongUserError(message)
 
@@ -101,7 +119,9 @@ class LtiUserData(models.Model):
         """
         Stores LTI parameters into the DB, creating or updating record as needed
         """
-        lti_user_data, created = cls.get_or_create_by_parameters(user, authentication_manager, lti_params)
+        lti_user_data, created = cls.get_or_create_by_parameters(
+            user, authentication_manager, lti_params
+        )
         lti_user_data.edx_lti_parameters = lti_params
         if not created:
             _logger.debug(u"Replaced LTI parameters for user %s", user.username)
@@ -110,5 +130,7 @@ class LtiUserData(models.Model):
 
     def __unicode__(self):
         return u"{classname} for {user} and (vary_key: {custom_key})".format(
-            classname=self.__class__.__name__, user=self.user, custom_key=self.custom_key
+            classname=self.__class__.__name__,
+            user=self.user,
+            custom_key=self.custom_key,
         )

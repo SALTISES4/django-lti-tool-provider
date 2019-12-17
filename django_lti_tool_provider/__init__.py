@@ -14,8 +14,11 @@ logging.getLogger("").addHandler(logging.NullHandler())
 @add_metaclass(ABCMeta)
 class AbstractApplicationHookManager(object):
     """ Class that performs authentication and redirection for LTI views """
+
     @abstractmethod
-    def authentication_hook(self, request, user_id=None, username=None, email=None, extra_params=None):
+    def authentication_hook(
+        self, request, user_id=None, username=None, email=None, extra_params=None
+    ):
         """ Hook to authenticate user from data available in LTI request """
 
     @abstractmethod
@@ -24,7 +27,7 @@ class AbstractApplicationHookManager(object):
 
     def anonymous_redirect_to(self, request, lti_data):
         """ Callback to determine redirect URL for non-authenticated LTI request """
-        return resolve('lti')
+        return resolve("lti")
 
     def vary_by_key(self, lti_data):
         """

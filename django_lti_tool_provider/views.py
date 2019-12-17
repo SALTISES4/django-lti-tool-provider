@@ -21,15 +21,16 @@ _logger = logging.getLogger(__name__)
 
 class LTIView(View):
     """ View handling LTI requests """
+
     authentication_manager = None
 
     PASS_TO_AUTHENTICATION_HOOK = {
-        'lis_person_sourcedid': 'username',
-        'lis_person_contact_email_primary': 'email',
-        'user_id': 'user_id'
+        "lis_person_sourcedid": "username",
+        "lis_person_contact_email_primary": "email",
+        "user_id": "user_id",
     }
 
-    SESSION_KEY = 'lti_parameters'
+    SESSION_KEY = "lti_parameters"
 
     @method_decorator(csrf_exempt)
     @method_decorator(xframe_options_exempt)
@@ -50,7 +51,10 @@ class LTIView(View):
             try:
                 lti_parameters = self._get_lti_parameters_from_request(request)
                 if not self._right_user(request.user, lti_parameters):
-                    _logger.debug(u"Logging out user %s in favor of new LTI session.", request.user.username)
+                    _logger.debug(
+                        u"Logging out user %s in favor of new LTI session.",
+                        request.user.username,
+                    )
                     logout(request)
             except (oauth2.Error, AttributeError):
                 # Not a new visit, or better to keep existing auth.
@@ -69,7 +73,7 @@ class LTIView(View):
                 for lti_name, hook_name in lti_parameters_mapping.iteritems()
             }
 
-            lti_data['extra_params'] = {
+            lti_data["extra_params"] = {
                 hook_name: lti_parameters.get(lti_name, None)
                 for lti_name, hook_name in self.authentication_manager.optional_lti_parameters().iteritems()
             }
@@ -79,25 +83,26 @@ class LTIView(View):
             self.authentication_manager.authentication_hook(request, **lti_data)
 
         if request.user.is_authenticated:
-            _logger.info('Processing authenticated LTI request')
+            _logger.info("Processing authenticated LTI request")
             return self.process_authenticated_lti(request)
         else:
-            _logger.info('Processing anonymous LTI request')
+            _logger.info("Processing anonymous LTI request")
             return self.process_anonymous_lti(request)
 
     @classmethod
     def lti_param_filter(cls, parameters):
         return {
-            key: value
-            for key, value in parameters.iteritems()
-            if 'oauth' not in key
+            key: value for key, value in parameters.iteritems() if "oauth" not in key
         }
 
     @classmethod
     def _right_user(cls, user, lti_parameters):
         try:
             info, created = LtiUserData.get_or_create_by_parameters(
-                user, cls.authentication_manager, cls.lti_param_filter(lti_parameters), create=False
+                user,
+                cls.authentication_manager,
+                cls.lti_param_filter(lti_parameters),
+                create=False,
             )
             if created:
                 # If this is the first time the user's data is being created, that means
@@ -110,7 +115,9 @@ class LTIView(View):
 
     @classmethod
     def _get_lti_parameters_from_request(cls, request):
-        provider = DjangoToolProvider(settings.LTI_CLIENT_KEY, settings.LTI_CLIENT_SECRET, request.POST)
+        provider = DjangoToolProvider(
+            settings.LTI_CLIENT_KEY, settings.LTI_CLIENT_SECRET, request.POST
+        )
         provider.valid_request(request)
         return provider.to_params()
 
@@ -134,7 +141,9 @@ class LTIView(View):
 
         request.session[cls.SESSION_KEY] = lti_parameters
         request.session.save()
-        return HttpResponseRedirect(cls.authentication_manager.anonymous_redirect_to(request, lti_parameters))
+        return HttpResponseRedirect(
+            cls.authentication_manager.anonymous_redirect_to(request, lti_parameters)
+        )
 
     @classmethod
     def process_authenticated_lti(cls, request):
@@ -158,12 +167,18 @@ class LTIView(View):
                 return HttpResponseBadRequest(u"Invalid LTI Request: " + e.message)
 
         lti_data = LtiUserData.store_lti_parameters(
-            request.user, cls.authentication_manager, cls.lti_param_filter(lti_parameters)
+            request.user,
+            cls.authentication_manager,
+            cls.lti_param_filter(lti_parameters),
         )
         Signals.LTI.received.send(cls, user=request.user, lti_data=lti_data)
 
-        return HttpResponseRedirect(cls.authentication_manager.authenticated_redirect_to(request, lti_parameters))
+        return HttpResponseRedirect(
+            cls.authentication_manager.authenticated_redirect_to(
+                request, lti_parameters
+            )
+        )
 
     @classmethod
     def _is_new_lti_request(cls, request):
-        return 'lis_result_sourcedid' in request.POST
+        return "lis_result_sourcedid" in request.POST
