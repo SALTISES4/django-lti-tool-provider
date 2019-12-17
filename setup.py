@@ -21,6 +21,7 @@
 # Imports ###########################################################
 
 import os
+
 from setuptools import setup
 
 with open(os.path.join(os.path.dirname(__file__), 'README.md')) as readme:
@@ -49,10 +50,10 @@ setup(
     packages=['django_lti_tool_provider'],
     install_requires=[
         'Django>=1.8',
-        'oauth2>=1.5.211',
         'jsonfield',
         'six',
-        'ims_lti_py'  # PyPi version is broken, install via requirements.txt
+        'lti',
+        'oauthlib'
     ],
     package_data=package_data("django_lti_tool_provider", []),
     classifiers=[
