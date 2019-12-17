@@ -1,20 +1,19 @@
-from django.contrib.auth import logout
-from django.core.exceptions import ImproperlyConfigured
-from django.utils.decorators import method_decorator
-from django.views.decorators.clickjacking import xframe_options_exempt
-from django.views.generic import View
-import oauth2
 import logging
 
+import oauth2
 from django.conf import settings
-from django.http import HttpResponseRedirect, HttpResponseBadRequest
+from django.contrib.auth import logout
+from django.core.exceptions import ImproperlyConfigured
+from django.http import HttpResponseBadRequest, HttpResponseRedirect
+from django.utils.decorators import method_decorator
+from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import csrf_exempt
+from django.views.generic import View
+from lti.contrib.django import DjangoToolProvider
 
-from ims_lti_py.tool_provider import DjangoToolProvider
-
-from django_lti_tool_provider.models import LtiUserData, WrongUserError
-from django_lti_tool_provider.signals import Signals
-
+from .models import LtiUserData, WrongUserError
+from .request_validator import RequestValidator
+from .signals import Signals
 
 _logger = logging.getLogger(__name__)
 
@@ -64,7 +63,9 @@ class LTIView(View):
                 lti_parameters = self._get_lti_parameters_from_request(request)
             except oauth2.Error as e:
                 _logger.exception(u"Invalid LTI Request")
-                return HttpResponseBadRequest(u"Invalid LTI Request: " + e.message)
+                return HttpResponseBadRequest(
+                    u"Invalid LTI Request: " + e.message
+                )
 
             lti_parameters_mapping = self.PASS_TO_AUTHENTICATION_HOOK.copy()
 
@@ -78,9 +79,13 @@ class LTIView(View):
                 for lti_name, hook_name in self.authentication_manager.optional_lti_parameters().iteritems()
             }
 
-            _logger.debug(u"Executing authentication hook with parameters %s", lti_data)
+            _logger.debug(
+                u"Executing authentication hook with parameters %s", lti_data
+            )
 
-            self.authentication_manager.authentication_hook(request, **lti_data)
+            self.authentication_manager.authentication_hook(
+                request, **lti_data
+            )
 
         if request.user.is_authenticated:
             _logger.info("Processing authenticated LTI request")
@@ -92,7 +97,9 @@ class LTIView(View):
     @classmethod
     def lti_param_filter(cls, parameters):
         return {
-            key: value for key, value in parameters.iteritems() if "oauth" not in key
+            key: value
+            for key, value in parameters.iteritems()
+            if "oauth" not in key
         }
 
     @classmethod
@@ -115,11 +122,13 @@ class LTIView(View):
 
     @classmethod
     def _get_lti_parameters_from_request(cls, request):
-        provider = DjangoToolProvider(
-            settings.LTI_CLIENT_KEY, settings.LTI_CLIENT_SECRET, request.POST
-        )
-        provider.valid_request(request)
-        return provider.to_params()
+        provider = DjangoToolProvider.from_django_request(request=request)
+        validator = RequestValidator()
+        valid = provider.is_valid_request(validator)
+        if valid:
+            return provider.to_params()
+        else:
+            raise RuntimeError("There's a problem with the lti request.")
 
     @classmethod
     def register_authentication_manager(cls, manager):
@@ -142,7 +151,9 @@ class LTIView(View):
         request.session[cls.SESSION_KEY] = lti_parameters
         request.session.save()
         return HttpResponseRedirect(
-            cls.authentication_manager.anonymous_redirect_to(request, lti_parameters)
+            cls.authentication_manager.anonymous_redirect_to(
+                request, lti_parameters
+            )
         )
 
     @classmethod
@@ -156,7 +167,9 @@ class LTIView(View):
         When lti parameters are ready (either taken from session or parsed and validated from request) store them
         in DB for later
         """
-        if cls.SESSION_KEY in request.session and not cls._is_new_lti_request(request):
+        if cls.SESSION_KEY in request.session and not cls._is_new_lti_request(
+            request
+        ):
             lti_parameters = request.session[cls.SESSION_KEY]
             del request.session[cls.SESSION_KEY]
         else:
@@ -164,7 +177,9 @@ class LTIView(View):
                 lti_parameters = cls._get_lti_parameters_from_request(request)
             except oauth2.Error, e:
                 _logger.exception(u"Invalid LTI Request")
-                return HttpResponseBadRequest(u"Invalid LTI Request: " + e.message)
+                return HttpResponseBadRequest(
+                    u"Invalid LTI Request: " + e.message
+                )
 
         lti_data = LtiUserData.store_lti_parameters(
             request.user,

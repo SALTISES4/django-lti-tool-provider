@@ -1,12 +1,10 @@
 import logging
 
-from django.db import models
-from django.contrib.auth.models import User
-from jsonfield import JSONField
-
-from ims_lti_py.tool_provider import DjangoToolProvider
 from django.conf import settings
-
+from django.contrib.auth.models import User
+from django.db import models
+from jsonfield import JSONField
+from lti.contrib.django import DjangoToolProvider
 
 _logger = logging.getLogger(__name__)
 
@@ -35,12 +33,16 @@ class LtiUserData(models.Model):
 
         if not 0 <= grade <= 1:
             _log_and_throw(
-                "Grade should be in range [0..1], got {grade}".format(grade=grade)
+                "Grade should be in range [0..1], got {grade}".format(
+                    grade=grade
+                )
             )
 
         if not self.edx_lti_parameters:
             _log_and_throw(
-                "LTI grade parameters is not set".format(params=self._required_params)
+                "LTI grade parameters is not set".format(
+                    params=self._required_params
+                )
             )
 
         empty_parameters = [
@@ -61,14 +63,18 @@ class LtiUserData(models.Model):
         """ Instantiates DjangoToolProvider using stored lti parameters and sends grade """
         self._validate_lti_grade_request(grade)
         provider = DjangoToolProvider(
-            settings.LTI_CLIENT_KEY, settings.LTI_CLIENT_SECRET, self.edx_lti_parameters
+            settings.LTI_CLIENT_KEY,
+            settings.LTI_CLIENT_SECRET,
+            self.edx_lti_parameters,
         )
         outcome = provider.post_replace_result(grade)
 
         _logger.info(
             u"LTI grade request was %(successful)s. Description is %(description)s",
             dict(
-                successful="successful" if outcome.is_success() else "unsuccessful",
+                successful="successful"
+                if outcome.is_success()
+                else "unsuccessful",
                 description=outcome.description,
             ),
         )
@@ -99,16 +105,18 @@ class LtiUserData(models.Model):
         else:
             # Could omit it, but it would change the signature.
             created = False
-            lti_user_data = LtiUserData.objects.get(user=user, custom_key=custom_key)
+            lti_user_data = LtiUserData.objects.get(
+                user=user, custom_key=custom_key
+            )
 
         if (
-            lti_user_data.edx_lti_parameters.get("user_id", lti_params["user_id"])
+            lti_user_data.edx_lti_parameters.get(
+                "user_id", lti_params["user_id"]
+            )
             != lti_params["user_id"]
         ):
             # TODO: not covered by test
-            message = (
-                u"LTI parameters for user found, but anonymous user id does not match."
-            )
+            message = u"LTI parameters for user found, but anonymous user id does not match."
             _logger.error(message)
             raise WrongUserError(message)
 
@@ -124,7 +132,9 @@ class LtiUserData(models.Model):
         )
         lti_user_data.edx_lti_parameters = lti_params
         if not created:
-            _logger.debug(u"Replaced LTI parameters for user %s", user.username)
+            _logger.debug(
+                u"Replaced LTI parameters for user %s", user.username
+            )
         lti_user_data.save()
         return lti_user_data
 
