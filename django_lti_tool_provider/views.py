@@ -1,6 +1,5 @@
 import logging
 
-import oauth2
 from django.conf import settings
 from django.contrib.auth import logout
 from django.core.exceptions import ImproperlyConfigured
@@ -55,13 +54,13 @@ class LTIView(View):
                         request.user.username,
                     )
                     logout(request)
-            except (oauth2.Error, AttributeError):
+            except (RuntimeError, AttributeError):
                 # Not a new visit, or better to keep existing auth.
                 pass
         if not request.user.is_authenticated:
             try:
                 lti_parameters = self._get_lti_parameters_from_request(request)
-            except oauth2.Error as e:
+            except RuntimeError as e:
                 _logger.exception(u"Invalid LTI Request")
                 return HttpResponseBadRequest(
                     u"Invalid LTI Request: " + e.message
@@ -144,7 +143,7 @@ class LTIView(View):
         """
         try:
             lti_parameters = cls._get_lti_parameters_from_request(request)
-        except oauth2.Error, e:
+        except RuntimeError, e:
             _logger.exception(u"Invalid LTI Request")
             return HttpResponseBadRequest(u"Invalid LTI Request: " + e.message)
 
@@ -175,7 +174,7 @@ class LTIView(View):
         else:
             try:
                 lti_parameters = cls._get_lti_parameters_from_request(request)
-            except oauth2.Error, e:
+            except RuntimeError, e:
                 _logger.exception(u"Invalid LTI Request")
                 return HttpResponseBadRequest(
                     u"Invalid LTI Request: " + e.message

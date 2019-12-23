@@ -1,16 +1,20 @@
-import ddt
-from django.contrib.auth import login, authenticate
+import random
+import time
 from importlib import import_module
-from django_lti_tool_provider import AbstractApplicationHookManager
-from mock import patch, Mock
 
-from oauth2 import Request, Consumer, SignatureMethod_HMAC_SHA1
-
-from django.contrib.auth.models import User
-from django.test.utils import override_settings
-from django.test import Client, TestCase, RequestFactory
+import ddt
 from django.conf import settings
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.models import User
+from django.test import Client, RequestFactory, TestCase
+from django.test.utils import override_settings
+from mock import Mock, patch
+from oauth2 import SignatureMethod_HMAC_SHA1
+from oauthlib.common import Request
+from oauthlib.oauth1.rfc5849 import Client as OAuthClient
+from oauthlib.oauth1.rfc5849 import signature
 
+from django_lti_tool_provider import AbstractApplicationHookManager
 from django_lti_tool_provider.models import LtiUserData
 from django_lti_tool_provider.views import LTIView
 
@@ -45,21 +49,42 @@ class LtiRequestsTestBase(TestCase):
 
     @property
     def consumer(self):
-        return Consumer(settings.LTI_CLIENT_KEY, settings.LTI_CLIENT_SECRET)
+        return OAuthClient(settings.LTI_CLIENT_KEY, settings.LTI_CLIENT_SECRET)
 
     def _get_signed_oauth_request(self, path, method, data=None):
         data = data if data is not None else self._data
-        url = self._url_base + path
+        url = (
+            self._url_base
+            + path
+            + "?"
+            + "&".join(
+                [
+                    "oauth_consumer_key" + "=" + self.consumer.client_key,
+                    "oauth_timestamp" + "=" + str(int(time.time())),
+                    "oauth_nonce"
+                    + "="
+                    + str(random.SystemRandom().randint(0, 10000000)),
+                    "oauth_version" + "=" + "1.0",
+                ]
+                + [key + "=" + str(val) for key, val in data.items()]
+            )
+        )
         method = method if method else "GET"
-        req = Request.from_consumer_and_token(self.consumer, {}, method, url, data)
-        req.sign_request(SignatureMethod_HMAC_SHA1(), self.consumer, None)
-        return req
+        url, headers, body = self.consumer.sign(
+            url,
+            method,
+            "",
+            headers=[("Content-Type", "application/x-www-form-urlencoded")],
+        )
+        return Request(url, method, body, headers)
 
     def get_correct_lti_payload(self, path="/lti/", method="POST", data=None):
         req = self._get_signed_oauth_request(path, method, data)
         return req.to_postdata()
 
-    def get_incorrect_lti_payload(self, path="/lti/", method="POST", data=None):
+    def get_incorrect_lti_payload(
+        self, path="/lti/", method="POST", data=None
+    ):
         req = self._get_signed_oauth_request(path, method, data)
         req["oauth_signature"] += "_broken"
         return req.to_postdata()
@@ -169,7 +194,9 @@ class AuthenticatedLtiRequestTests(LtiRequestsTestBase):
         user = User.objects.all()[0]
         self._verify_lti_created(user, self._data)
         self._verify_redirected_to(response, self.DEFAULT_REDIRECT)
-        self._verify_lti_updated_signal_is_sent(patched_send_lti_received, user)
+        self._verify_lti_updated_signal_is_sent(
+            patched_send_lti_received, user
+        )
 
     def test_given_session_and_lti_uses_lti(self, patched_send_lti_received):
         # Precondition check
@@ -185,7 +212,9 @@ class AuthenticatedLtiRequestTests(LtiRequestsTestBase):
         user = User.objects.all()[0]
         self._verify_lti_created(user, self._data)
         self._verify_redirected_to(response, self.DEFAULT_REDIRECT)
-        self._verify_lti_updated_signal_is_sent(patched_send_lti_received, user)
+        self._verify_lti_updated_signal_is_sent(
+            patched_send_lti_received, user
+        )
 
     def test_force_login_change(self, patched_send_lti_received):
         self.assertFalse(User.objects.exclude(id=1))
@@ -240,7 +269,9 @@ class AuthenticationManagerIntegrationTests(LtiRequestsTestBase):
         user = User.objects.create_user(
             username=username, email=email, password=password
         )
-        authenticated_user = authenticate(request, username=username, password=password)
+        authenticated_user = authenticate(
+            request, username=username, password=password
+        )
         login(request, authenticated_user)
 
         self.addCleanup(lambda: user.delete())
@@ -275,7 +306,10 @@ class AuthenticationManagerIntegrationTests(LtiRequestsTestBase):
             "username": self._data["lis_person_sourcedid"],
             "email": self._data["lis_person_contact_email_primary"],
             "user_id": self._data["user_id"],
-            "extra_params": {"roles": ["Student"], "link_id": "resource_link_id",},
+            "extra_params": {
+                "roles": ["Student"],
+                "link_id": "resource_link_id",
+            },
         }
         self.assertEqual(user_data, expected_user_data)
 
@@ -291,7 +325,9 @@ class AuthenticationManagerIntegrationTests(LtiRequestsTestBase):
         self._verify_session_lti_contents(self.client.session, self._data)
 
         # verifying correct parameters were passed to auth manager hook
-        request, lti_data = self.hook_manager.anonymous_redirect_to.call_args[0]
+        request, lti_data = self.hook_manager.anonymous_redirect_to.call_args[
+            0
+        ]
         self._verify_session_lti_contents(request.session, self._data)
         self._verify_lti_data(lti_data, self._data)
 
@@ -299,14 +335,19 @@ class AuthenticationManagerIntegrationTests(LtiRequestsTestBase):
     def test_authenticated_lti_is_processed_if_hook_authenticates_user(
         self, expected_url
     ):
-        self.hook_manager.authentication_hook.side_effect = self._authenticate_user
+        self.hook_manager.authentication_hook.side_effect = (
+            self._authenticate_user
+        )
         self.hook_manager.authenticated_redirect_to.return_value = expected_url
         response = self.send_lti_request(self.get_correct_lti_payload())
 
         self._verify_redirected_to(response, expected_url)
 
         # verifying correct parameters were passed to auth manager hook
-        request, lti_data = self.hook_manager.authenticated_redirect_to.call_args[0]
+        (
+            request,
+            lti_data,
+        ) = self.hook_manager.authenticated_redirect_to.call_args[0]
         user = request.user
         self._verify_lti_created(user, self._data)
         self._verify_lti_data(lti_data, self._data)
@@ -314,10 +355,15 @@ class AuthenticationManagerIntegrationTests(LtiRequestsTestBase):
     @ddt.data("custom", "very custom", "extremely custom")
     def test_authenticated_lti_saves_custom_key_if_specified(self, key):
         self.hook_manager.vary_by_key.return_value = key
-        self.hook_manager.authentication_hook.side_effect = self._authenticate_user
+        self.hook_manager.authentication_hook.side_effect = (
+            self._authenticate_user
+        )
 
         self.send_lti_request(self.get_correct_lti_payload())
 
-        request, lti_data = self.hook_manager.authenticated_redirect_to.call_args[0]
+        (
+            request,
+            lti_data,
+        ) = self.hook_manager.authenticated_redirect_to.call_args[0]
         user = request.user
         self._verify_lti_created(user, self._data, key)
