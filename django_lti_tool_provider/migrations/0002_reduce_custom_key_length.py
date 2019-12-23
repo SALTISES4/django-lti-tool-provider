@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-from django.db import models, migrations
+from django.db import migrations, models
 from django.db.models import Max
 from django.db.models.functions import Length
 
@@ -15,7 +15,7 @@ def check_field_max_length_lteq_190(apps, schema_editor):
     max_custom_key_length = LtiUserData.objects.aggregate(
         length=Max(Length("custom_key"))
     )["length"]
-    if max_custom_key_length > 190:
+    if max_custom_key_length is not None and max_custom_key_length > 190:
         raise ValueError(
             "Cannot perform migration: values of 'custom_key' with length "
             "{} exceed the expected length 190.".format(max_custom_key_length)
