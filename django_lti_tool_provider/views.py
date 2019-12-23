@@ -34,7 +34,7 @@ class LTIView(View):
     @method_decorator(xframe_options_exempt)
     def dispatch(self, *args, **kwargs):
         if self.authentication_manager is None:
-            raise ImproperlyConfigured(u"AuthenticationManager is not set")
+            raise ImproperlyConfigured("AuthenticationManager is not set")
 
         return super(LTIView, self).dispatch(*args, **kwargs)
 
@@ -50,7 +50,7 @@ class LTIView(View):
                 lti_parameters = self._get_lti_parameters_from_request(request)
                 if not self._right_user(request.user, lti_parameters):
                     _logger.debug(
-                        u"Logging out user %s in favor of new LTI session.",
+                        "Logging out user %s in favor of new LTI session.",
                         request.user.username,
                     )
                     logout(request)
@@ -61,25 +61,25 @@ class LTIView(View):
             try:
                 lti_parameters = self._get_lti_parameters_from_request(request)
             except RuntimeError as e:
-                _logger.exception(u"Invalid LTI Request")
+                _logger.exception("Invalid LTI Request")
                 return HttpResponseBadRequest(
-                    u"Invalid LTI Request: " + e.message
+                    "Invalid LTI Request: " + e.message
                 )
 
             lti_parameters_mapping = self.PASS_TO_AUTHENTICATION_HOOK.copy()
 
             lti_data = {
                 hook_name: lti_parameters.get(lti_name, None)
-                for lti_name, hook_name in lti_parameters_mapping.iteritems()
+                for lti_name, hook_name in lti_parameters_mapping.items()
             }
 
             lti_data["extra_params"] = {
                 hook_name: lti_parameters.get(lti_name, None)
-                for lti_name, hook_name in self.authentication_manager.optional_lti_parameters().iteritems()
+                for lti_name, hook_name in self.authentication_manager.optional_lti_parameters().items()
             }
 
             _logger.debug(
-                u"Executing authentication hook with parameters %s", lti_data
+                "Executing authentication hook with parameters %s", lti_data
             )
 
             self.authentication_manager.authentication_hook(
@@ -97,7 +97,7 @@ class LTIView(View):
     def lti_param_filter(cls, parameters):
         return {
             key: value
-            for key, value in parameters.iteritems()
+            for key, value in parameters.items()
             if "oauth" not in key
         }
 
@@ -143,9 +143,9 @@ class LTIView(View):
         """
         try:
             lti_parameters = cls._get_lti_parameters_from_request(request)
-        except RuntimeError, e:
-            _logger.exception(u"Invalid LTI Request")
-            return HttpResponseBadRequest(u"Invalid LTI Request: " + e.message)
+        except RuntimeError as e:
+            _logger.exception("Invalid LTI Request")
+            return HttpResponseBadRequest("Invalid LTI Request: " + e.message)
 
         request.session[cls.SESSION_KEY] = lti_parameters
         request.session.save()
@@ -174,10 +174,10 @@ class LTIView(View):
         else:
             try:
                 lti_parameters = cls._get_lti_parameters_from_request(request)
-            except RuntimeError, e:
-                _logger.exception(u"Invalid LTI Request")
+            except RuntimeError as e:
+                _logger.exception("Invalid LTI Request")
                 return HttpResponseBadRequest(
-                    u"Invalid LTI Request: " + e.message
+                    "Invalid LTI Request: " + e.message
                 )
 
         lti_data = LtiUserData.store_lti_parameters(

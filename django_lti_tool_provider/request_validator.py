@@ -22,7 +22,7 @@ class RequestValidator(_RequestValidator):
         return True
 
     def get_client_secret(self, client_key, request):
-        return unicode(settings.LTI_CLIENT_SECRET)
+        return str(settings.LTI_CLIENT_SECRET)
 
     def check_client_key(self, client_key):
         return True

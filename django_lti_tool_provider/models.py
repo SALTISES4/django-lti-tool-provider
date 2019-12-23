@@ -70,7 +70,7 @@ class LtiUserData(models.Model):
         outcome = provider.post_replace_result(grade)
 
         _logger.info(
-            u"LTI grade request was %(successful)s. Description is %(description)s",
+            "LTI grade request was %(successful)s. Description is %(description)s",
             dict(
                 successful="successful"
                 if outcome.is_success()
@@ -116,7 +116,7 @@ class LtiUserData(models.Model):
             != lti_params["user_id"]
         ):
             # TODO: not covered by test
-            message = u"LTI parameters for user found, but anonymous user id does not match."
+            message = "LTI parameters for user found, but anonymous user id does not match."
             _logger.error(message)
             raise WrongUserError(message)
 
@@ -133,13 +133,13 @@ class LtiUserData(models.Model):
         lti_user_data.edx_lti_parameters = lti_params
         if not created:
             _logger.debug(
-                u"Replaced LTI parameters for user %s", user.username
+                "Replaced LTI parameters for user %s", user.username
             )
         lti_user_data.save()
         return lti_user_data
 
     def __unicode__(self):
-        return u"{classname} for {user} and (vary_key: {custom_key})".format(
+        return "{classname} for {user} and (vary_key: {custom_key})".format(
             classname=self.__class__.__name__,
             user=self.user,
             custom_key=self.custom_key,

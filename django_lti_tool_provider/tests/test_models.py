@@ -57,7 +57,7 @@ class LtiUserDataTest(TestCase):
             "client_key", "lti_client_secret", self.model.edx_lti_parameters
         )
 
-    @ddt.data(*[1.0 - i * 0.1 for i in xrange(10, -1, -1)])
+    @ddt.data(*[1.0 - i * 0.1 for i in range(10, -1, -1)])
     def test_send_lti_grade_sends_replace_result_request(
         self, grade, tool_provider_constructor_mock
     ):

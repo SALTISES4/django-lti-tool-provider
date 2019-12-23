@@ -66,7 +66,7 @@ class LtiRequestsTestBase(TestCase):
                     + str(random.SystemRandom().randint(0, 10000000)),
                     "oauth_version" + "=" + "1.0",
                 ]
-                + [key + "=" + str(val) for key, val in data.items()]
+                + [key + "=" + str(val) for key, val in list(data.items())]
             )
         )
         method = method if method else "GET"
@@ -114,7 +114,7 @@ class LtiRequestsTestBase(TestCase):
         self._verify_lti_data(session["lti_parameters"], expected)
 
     def _verify_lti_data(self, actual, expected):
-        for key, value in expected.items():
+        for key, value in list(expected.items()):
             self.assertEqual(value, actual[key])
 
     def _verify_lti_created(self, user, expected_lti_data, custom_key=None):
@@ -122,7 +122,7 @@ class LtiRequestsTestBase(TestCase):
         lti_data = LtiUserData.objects.get(user=user, custom_key=key)
         self.assertIsNotNone(lti_data)
         self.assertEqual(lti_data.custom_key, key)
-        for key, value in expected_lti_data.items():
+        for key, value in list(expected_lti_data.items()):
             self.assertEqual(value, lti_data.edx_lti_parameters[key])
 
 

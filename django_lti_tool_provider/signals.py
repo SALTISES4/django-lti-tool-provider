@@ -27,18 +27,18 @@ def grade_updated_handler(sender, **kwargs):  # pylint: disable=unused-argument
 def _send_grade(user, grade, custom_key):
     try:
         if user is None:
-            raise ValueError(u"User is not specified")
+            raise ValueError("User is not specified")
         lti_user_data = LtiUserData.objects.get(user=user, custom_key=custom_key)
         lti_user_data.send_lti_grade(grade)
     except LtiUserData.DoesNotExist:
         _logger.info(
-            u"No LTI parameters for user %(user)s and key %(key)s stored - probably never sent an LTI request",
+            "No LTI parameters for user %(user)s and key %(key)s stored - probably never sent an LTI request",
             dict(user=user.username, key=custom_key),
         )
         raise
     except Exception:
         _logger.exception(
-            u"Exception occurred in lti module when sending grade for user %(user)s and key %(key)s.",
+            "Exception occurred in lti module when sending grade for user %(user)s and key %(key)s.",
             dict(user=user, key=custom_key),
         )
         raise

@@ -15,7 +15,7 @@ class SignalHandlersTests(TestCase):
         (Mock(spec=User), 0.5),
         (Mock(spec=User), 0.2),
         (
-            u"something to indicate that grade_updated_handler is dumb and don't do any type checking",
+            "something to indicate that grade_updated_handler is dumb and don't do any type checking",
             0.2,
         ),
     )
@@ -28,7 +28,7 @@ class SignalHandlersTests(TestCase):
         (Mock(spec=User), None, 0.5),
         (Mock(spec=User), "custom_key", 0.2),
         (
-            u"something to indicate that grade_updated_handler is dumb and don't do any type checking",
+            "something to indicate that grade_updated_handler is dumb and don't do any type checking",
             12,
             0.2,
         ),
@@ -56,7 +56,7 @@ class SendGradeTests(TestCase):
     @ddt.data(
         (Mock(spec=User), None),
         (Mock(spec=User), "123"),
-        (Mock(spec=User), u"assignment12"),
+        (Mock(spec=User), "assignment12"),
     )
     @ddt.unpack
     def test_send_grade_requests_correct_lti_user_data(
