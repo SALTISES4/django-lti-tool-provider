@@ -4,9 +4,6 @@ PyYAML
 six
 oauthlib
 lti
-lti
-
-# ims_lti_py pypi package is outdated and broken - using development version where the bug is fixed
 
 # test requirements
 mock
