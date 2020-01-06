@@ -174,9 +174,7 @@ class LTIView(View):
                 lti_parameters = cls._get_lti_parameters_from_request(request)
             except RuntimeError as e:
                 _logger.exception("Invalid LTI Request")
-                return HttpResponseBadRequest(
-                    "Invalid LTI Request: " + e.message
-                )
+                return HttpResponseBadRequest("Invalid LTI Request: " + str(e))
 
         lti_data = LtiUserData.store_lti_parameters(
             request.user,
