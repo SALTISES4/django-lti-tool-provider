@@ -24,10 +24,11 @@ import os
 
 from setuptools import setup
 
-with open(os.path.join(os.path.dirname(__file__), 'README.md')) as readme:
+with open(os.path.join(os.path.dirname(__file__), "README.md")) as readme:
     README = readme.read()
 
 # Functions #########################################################
+
 
 def package_data(pkg, root_list):
     """Generic function to find package_data for `pkg` under `root`."""
@@ -42,28 +43,22 @@ def package_data(pkg, root_list):
 
 # Main ##############################################################
 setup(
-    name='django_lti_tool_provider',
-    version='0.1.6',
+    name="django_lti_tool_provider",
+    version="0.1.6",
     license="GNU AFFERO GENERAL PUBLIC LICENSE",
-    description='IMS LTI Tool Provider Django Applocation',
+    description="IMS LTI Tool Provider Django Applocation",
     long_description=README,
-    packages=['django_lti_tool_provider'],
-    install_requires=[
-        'Django>=1.8',
-        'jsonfield',
-        'six',
-        'lti',
-        'oauthlib'
-    ],
+    packages=["django_lti_tool_provider"],
+    install_requires=["Django<3.0.0", "jsonfield", "six", "lti", "oauthlib"],
     package_data=package_data("django_lti_tool_provider", []),
     classifiers=[
-        'Environment :: Web Environment',
-        'Framework :: Django',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: GNU Affero General Public License v3',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
-    ]
+        "Environment :: Web Environment",
+        "Framework :: Django",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: GNU Affero General Public License v3",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+    ],
 )
