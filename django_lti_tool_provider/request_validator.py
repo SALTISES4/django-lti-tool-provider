@@ -26,3 +26,6 @@ class RequestValidator(_RequestValidator):
 
     def check_client_key(self, client_key):
         return True
+
+    def check_nonce(self, nonce):
+        return True
