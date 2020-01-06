@@ -62,9 +62,7 @@ class LTIView(View):
                 lti_parameters = self._get_lti_parameters_from_request(request)
             except RuntimeError as e:
                 _logger.exception("Invalid LTI Request")
-                return HttpResponseBadRequest(
-                    "Invalid LTI Request: " + e.message
-                )
+                return HttpResponseBadRequest("Invalid LTI Request: " + str(e))
 
             lti_parameters_mapping = self.PASS_TO_AUTHENTICATION_HOOK.copy()
 
